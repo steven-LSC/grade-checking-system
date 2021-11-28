@@ -79,7 +79,7 @@
                 {{ title }}
               </h3>
               <div class="mt-2">
-                <p class="text-sm text-gray-500">
+                <p style="white-space: pre-line" class="text-sm text-gray-500">
                   {{ content }}
                 </p>
               </div>

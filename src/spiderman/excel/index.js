@@ -1,18 +1,30 @@
 import xlsx from 'xlsx';
 
-function rawExcelToJson({ value: { files: [rawFile] } }) {
-  return new Promise((resolve) => {
+function rawFileToObject({ value: { files: [rawFile] } }) {
+  return new Promise((resolve, reject) => {
     const fileReader = new FileReader();
     fileReader.readAsBinaryString(rawFile);
     fileReader.onload = (event) => {
-      const excel = event.target.result;
-      const workbook = xlsx.read(excel, { type: 'binary' });
-      const { SheetNames: sheetNames } = workbook;
+      try {
+        const { target: { result: excel } } = event;
+        const {
+          Sheets: sheets,
+          SheetNames: sheetNames,
+        } = xlsx.read(excel, { type: 'binary' });
+        const object = {};
 
-      resolve(xlsx.utils.sheet_to_json(workbook.Sheets[sheetNames[0]]));
+        sheetNames.forEach((sheetName) => {
+          object[sheetName] = xlsx.utils.sheet_to_json(sheets[sheetName]);
+        });
+
+        resolve(object);
+      } catch {
+        reject(Error('檔案讀取錯誤，請確認檔案格式是否正確。'));
+      }
     };
   });
 }
+
 export default {
-  rawExcelToJson,
+  rawFileToObject,
 };

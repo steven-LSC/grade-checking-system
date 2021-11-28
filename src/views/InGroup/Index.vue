@@ -6,36 +6,53 @@
           id="file-upload"
           type="file"
           class="sr-only"
-          ref="excel"
+          ref="rawFile"
+          accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           @change="upload"
         />
       </Upload>
     </div>
 
     <div class="group">
-      <p class="title">成績是怎麼放的？</p>
-      <p class="note">目前只支援單行的擺放方式。</p>
-      <select v-model="setting.wayOfPuttingGrade" class="primary">
-        <option value="singleLine">單行</option>
+      <p class="title">成績是在哪個sheet?</p>
+      <p class="note">目前只支援單格sheet的擺放方式。</p>
+      <select v-model="setting.sheet" class="primary">
+        <option v-for="(sheet, index) in sheets" :value="sheet" :key="index">
+          {{ sheet }}
+        </option>
       </select>
     </div>
 
     <div class="group">
+      <p class="title">成績是怎麼放的？</p>
+      <p class="note">目前只支援單行的擺放方式。</p>
+      <select v-model="setting.wayOfPuttingScore" class="primary">
+        <option value="singleLine">單行</option>
+      </select>
+    </div>
+
+    <div class="group" v-if="setting.sheet">
       <p class="title">成績在哪一行？</p>
-      <select v-model="setting.gradeKey" class="primary">
-        <option
-          v-for="(gradeKey, index) in gradeKeys"
-          :value="gradeKey"
-          :key="index"
-        >
-          {{ gradeKey }}
+      <select v-model="setting.scoreKey" class="primary">
+        <option v-for="(key, index) in keys" :value="key" :key="index">
+          {{ key }}
         </option>
       </select>
     </div>
+
+    <div class="group">
+      <p class="title">輸出的欄位名稱</p>
+      <select v-model="setting.outputKey" class="primary">
+        <option v-for="(key, index) in keys" :value="key" :key="index">
+          {{ key }}
+        </option>
+      </select>
+    </div>
+
     <div class="group">
       <p class="title">您的差分檢核機制是？</p>
       <p class="note">目前只支援兩種差分檢核方式。</p>
-      <select v-model="setting.validateType" class="primary">
+      <select v-model="setting.checkingType" class="primary">
         <option value="scoreDiff">
           單一學生，分數差距大於＿分，即為差分過大。
         </option>
@@ -44,16 +61,16 @@
         </option>
       </select>
     </div>
-    <div v-if="setting.validateType === 'scoreDiff'" class="group">
+    <div v-if="setting.checkingType === 'scoreDiff'" class="group">
       <p class="title">差幾分算是差分過大？</p>
       <input
-        v-model.number="setting.gradeMaxGap"
+        v-model.number="setting.scoreGapThreshold"
         type="text"
         class="text"
         placeholder="20"
       />
     </div>
-    <div v-if="setting.validateType === 'classDiff'" class="group">
+    <div v-if="setting.checkingType === 'classDiff'" class="group">
       <p class="title">
         請定義級距，四個級距中，只需要定義第二級距和第三級距即可。
       </p>
@@ -65,7 +82,7 @@
         <p class="title">第二級距：</p>
         <div class="same-line__element--input">
           <input
-            v-model.number="setting.gradeClass.second.start"
+            v-model.number="setting.scoreClass.second.start"
             type="text"
             class="text"
             placeholder="開始(ex: 70)"
@@ -73,7 +90,7 @@
         </div>
         <div style="same-line__element--input">
           <input
-            v-model.number="setting.gradeClass.second.end"
+            v-model.number="setting.scoreClass.second.end"
             type="text"
             class="text"
             placeholder="結束(ex: 80)"
@@ -84,7 +101,7 @@
         <p class="title">第三級距：</p>
         <div class="same-line__element--input">
           <input
-            v-model.number="setting.gradeClass.third.start"
+            v-model.number="setting.scoreClass.third.start"
             type="text"
             class="text"
             placeholder="開始(ex: 60)"
@@ -92,7 +109,7 @@
         </div>
         <div style="same-line__element--input">
           <input
-            v-model.number="setting.gradeClass.third.end"
+            v-model.number="setting.scoreClass.third.end"
             type="text"
             class="text"
             placeholder="結束(ex: 70)"
@@ -102,7 +119,7 @@
     </div>
     <fieldset class="mt-4">
       <button @click="$router.replace('/')" class="white">返回</button>
-      <button @click="validate" class="purple">開始檢核！</button>
+      <button @click="startChecking" class="purple">開始檢核！</button>
     </fieldset>
   </div>
   <ModalComplete
@@ -124,7 +141,7 @@
 </template>
 
 <script>
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import spiderman from '@/spiderman';
 import check from './check';
 import ModalComplete from '@/components/ModalComplete.vue';
@@ -138,26 +155,29 @@ export default {
     Upload,
   },
   setup() {
-    const excel = ref(null);
-    const gradeKeys = ref(null);
-    const complete = reactive({
-      display: false,
-      title: '檢核結束',
-      content: '內容',
-      textInButton: '下載',
-    });
-    const warning = reactive({
+    let excel = {};
+    const rawFile = ref(null);
+    const sheets = ref(null);
+    const warning = ref({
       display: false,
       title: '錯誤',
       content: '內容',
-      textInButton: '了解',
+      textInButton: '關閉',
+    });
+    const complete = reactive({
+      display: false,
+      title: '差分檢核通過',
+      content: '恭喜您，並無任何成績異樣。',
+      textInButton: '結束',
     });
     const setting = reactive({
-      wayOfPuttingGrade: null,
-      gradeKey: null,
-      validateType: null,
-      gradeMaxGap: null,
-      gradeClass: {
+      wayOfPuttingScore: null,
+      sheet: null,
+      scoreKey: null,
+      outputKey: null,
+      checkingType: null,
+      scoreGapThreshold: null,
+      scoreClass: {
         second: {
           start: null,
           end: null,
@@ -168,74 +188,118 @@ export default {
         },
       },
     });
-    let grades;
+    const keys = computed(() => (excel && setting.sheet ? Object.keys(excel[setting.sheet][0]) : []));
 
     async function upload() {
-      grades = await spiderman.excel.rawExcelToJson(excel);
-      gradeKeys.value = Object.keys(grades[0]);
-      console.log(gradeKeys.value);
+      try {
+        excel = await spiderman.excel.rawFileToObject(rawFile);
+        sheets.value = Object.keys(excel);
+      } catch (error) {
+        warning.value = {
+          display: true,
+          title: '錯誤',
+          content: error.message,
+          textInButton: '關閉',
+        };
+      }
     }
 
-    function validate() {
+    function startChecking() {
       // todo: 檢查檔案類別?
       // todo: 檢查title只有一行?
       // todo: multipleLine to singleLine
       try {
         switch (true) {
-          case !grades:
+          case !excel:
             throw Error('您尚未上傳成績表格。');
-          case !setting.wayOfPuttingGrade:
+          case !setting.wayOfPuttingScore:
             throw Error('請選擇成績擺放方式。');
-          case !setting.gradeKey:
+          case !setting.scoreKey:
             throw Error('請選擇成績在哪一行。');
-          case !setting.validateType:
+          case !setting.checkingType:
             throw Error('請選擇差分檢核機制。');
           default:
             break;
         }
 
-        switch (setting.validateType) {
+        switch (setting.checkingType) {
           case 'scoreDiff': {
-            const { gradeKey, gradeMaxGap } = setting;
+            const {
+              scoreKey, outputKey, sheet, scoreGapThreshold,
+            } = setting;
+            const students = excel[sheet];
 
-            if (!setting.gradeMaxGap) throw Error('請填寫差分過大的門檻。');
+            if (!setting.scoreGapThreshold) throw Error('請填寫差分過大的門檻。');
 
-            check.scoreDiff({
-              grades,
-              gradeKey,
-              gradeMaxGap,
+            const invalidStudents = check.scoreDiff({
+              students,
+              scoreKey,
+              scoreGapThreshold,
             });
+
+            if (invalidStudents.length === 0) {
+              complete.display = true;
+              break;
+            }
+
+            let content = '以下同學不符合差分標準：\n';
+            invalidStudents.forEach((invalidStudent) => {
+              content += `${invalidStudent[outputKey]}\n`;
+            });
+
+            warning.value = {
+              display: true,
+              title: '差分檢核不通過',
+              content,
+              textInButton: '關閉',
+            };
             break;
           }
 
-          case 'classDiff':
-            if (!setting.gradeClass.second.start) throw Error('請填寫第二級距開始成績。');
-            if (!setting.gradeClass.second.end) throw Error('請填寫第二級距結束成績。');
-            if (
-              setting.gradeClass.second.start >= setting.gradeClass.second.end
-            ) throw Error('第二級距結束成績需要大於開始成績。');
-            if (!setting.gradeClass.third.start) throw Error('請填寫第三級距開始成績。');
-            if (!setting.gradeClass.third.end) throw Error('請填寫第三級距結束成績。');
-            if (setting.gradeClass.third.start >= setting.gradeClass.third.end) throw Error('第三級距結束成績需要大於開始成績。');
+          case 'classDiff': {
+            const {
+              scoreKey,
+              sheet,
+              scoreClass: { secondClass, thridClass },
+            } = setting;
+            const students = excel[sheet];
 
-            check.classDiff(grades);
+            if (!secondClass.start) throw Error('請填寫第二級距開始成績。');
+            if (!secondClass.end) throw Error('請填寫第二級距結束成績。');
+            if (!thridClass.start) throw Error('請填寫第三級距開始成績。');
+            if (!thridClass.end) throw Error('請填寫第三級距結束成績。');
+            if (secondClass.start >= secondClass.end) throw Error('第二級距結束成績需要大於開始成績。');
+            if (thridClass.start >= thridClass.end) throw Error('第三級距結束成績需要大於開始成績。');
+
+            check.classDiff({
+              students,
+              scoreKey,
+              secondClass,
+              thridClass,
+            });
             break;
+          }
 
           default:
             break;
         }
       } catch (error) {
-        warning.display = true;
-        warning.content = error.message;
+        warning.value = {
+          display: true,
+          title: '錯誤',
+          content: error.message,
+          textInButton: '關閉',
+        };
       }
     }
 
     return {
-      excel,
+      rawFile,
       upload,
-      gradeKeys,
+      keys,
+      sheets,
       setting,
-      validate,
+      startChecking,
       complete,
       warning,
     };
