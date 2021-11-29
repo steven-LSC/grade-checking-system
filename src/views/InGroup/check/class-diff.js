@@ -1,6 +1,7 @@
 export default function ({
-  students, scoreKey, secondClass, thridClass,
+  students, scoreKey, secondClass, thirdClass,
 } = {}) {
+  console.log('object');
   const invalidStudents = [];
 
   students.forEach((student) => {
@@ -12,7 +13,7 @@ export default function ({
           return 1;
         case (score > secondClass.start && score <= secondClass.end):
           return 2;
-        case (score > thridClass.start && score <= thridClass.end):
+        case (score > thirdClass.start && score <= thirdClass.end):
           return 3;
         default:
           return 4;

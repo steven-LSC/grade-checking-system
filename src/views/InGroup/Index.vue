@@ -15,7 +15,7 @@
 
     <div class="group">
       <p class="title">成績是在哪個sheet?</p>
-      <p class="note">目前只支援單格sheet的擺放方式。</p>
+      <p class="note">目前只支援單個sheet的擺放方式。</p>
       <select v-model="setting.sheet" class="primary">
         <option v-for="(sheet, index) in sheets" :value="sheet" :key="index">
           {{ sheet }}
@@ -31,22 +31,28 @@
       </select>
     </div>
 
-    <div class="group" v-if="setting.sheet">
-      <p class="title">成績在哪一行？</p>
-      <select v-model="setting.scoreKey" class="primary">
-        <option v-for="(key, index) in keys" :value="key" :key="index">
-          {{ key }}
-        </option>
-      </select>
-    </div>
+    <div v-if="setting.sheet">
+      <div class="group">
+        <p class="title">成績在哪一行？</p>
+        <p class="note">選擇您將成績所放置的欄位</p>
+        <select v-model="setting.scoreKey" class="primary">
+          <option v-for="(key, index) in keys" :value="key" :key="index">
+            {{ key }}
+          </option>
+        </select>
+      </div>
 
-    <div class="group">
-      <p class="title">輸出的欄位名稱</p>
-      <select v-model="setting.outputKey" class="primary">
-        <option v-for="(key, index) in keys" :value="key" :key="index">
-          {{ key }}
-        </option>
-      </select>
+      <div class="group">
+        <p class="title">輸出的欄位名稱</p>
+        <p class="note">
+          例如：選擇學生姓名，審核結束時會輸出不合格的學生姓名。
+        </p>
+        <select v-model="setting.outputKey" class="primary">
+          <option v-for="(key, index) in keys" :value="key" :key="index">
+            {{ key }}
+          </option>
+        </select>
+      </div>
     </div>
 
     <div class="group">
@@ -75,7 +81,7 @@
         請定義級距，四個級距中，只需要定義第二級距和第三級距即可。
       </p>
       <p class="note">
-        ex: 第一級距: 90~80，第二級距：70~80，第三級距：60~70，第四級距:
+        ex: 第一級距: 80以上，第二級距：70~80，第三級距：60~70，第四級距:
         60以下，只需要定義第二級距和第三級距即可
       </p>
       <div class="same-line">
@@ -155,7 +161,7 @@ export default {
     Upload,
   },
   setup() {
-    let excel = {};
+    let excel = null;
     const rawFile = ref(null);
     const sheets = ref(null);
     const warning = ref({
@@ -171,8 +177,8 @@ export default {
       textInButton: '結束',
     });
     const setting = reactive({
-      wayOfPuttingScore: null,
       sheet: null,
+      wayOfPuttingScore: null,
       scoreKey: null,
       outputKey: null,
       checkingType: null,
@@ -204,6 +210,27 @@ export default {
       }
     }
 
+    function handleInvalidStudents(invalidStudents) {
+      if (invalidStudents.length === 0) {
+        complete.display = true;
+        return;
+      }
+
+      const { outputKey } = setting;
+
+      let content = '以下同學不符合差分標準：\n';
+      invalidStudents.forEach((invalidStudent) => {
+        content += `${invalidStudent[outputKey]}\n`;
+      });
+
+      warning.value = {
+        display: true,
+        title: '差分檢核不通過',
+        content,
+        textInButton: '關閉',
+      };
+    }
+
     function startChecking() {
       // todo: 檢查檔案類別?
       // todo: 檢查title只有一行?
@@ -224,9 +251,7 @@ export default {
 
         switch (setting.checkingType) {
           case 'scoreDiff': {
-            const {
-              scoreKey, outputKey, sheet, scoreGapThreshold,
-            } = setting;
+            const { scoreKey, sheet, scoreGapThreshold } = setting;
             const students = excel[sheet];
 
             if (!setting.scoreGapThreshold) throw Error('請填寫差分過大的門檻。');
@@ -237,22 +262,8 @@ export default {
               scoreGapThreshold,
             });
 
-            if (invalidStudents.length === 0) {
-              complete.display = true;
-              break;
-            }
+            handleInvalidStudents(invalidStudents);
 
-            let content = '以下同學不符合差分標準：\n';
-            invalidStudents.forEach((invalidStudent) => {
-              content += `${invalidStudent[outputKey]}\n`;
-            });
-
-            warning.value = {
-              display: true,
-              title: '差分檢核不通過',
-              content,
-              textInButton: '關閉',
-            };
             break;
           }
 
@@ -260,23 +271,26 @@ export default {
             const {
               scoreKey,
               sheet,
-              scoreClass: { secondClass, thridClass },
+              scoreClass: { second: secondClass, third: thirdClass },
             } = setting;
             const students = excel[sheet];
 
             if (!secondClass.start) throw Error('請填寫第二級距開始成績。');
             if (!secondClass.end) throw Error('請填寫第二級距結束成績。');
-            if (!thridClass.start) throw Error('請填寫第三級距開始成績。');
-            if (!thridClass.end) throw Error('請填寫第三級距結束成績。');
+            if (!thirdClass.start) throw Error('請填寫第三級距開始成績。');
+            if (!thirdClass.end) throw Error('請填寫第三級距結束成績。');
             if (secondClass.start >= secondClass.end) throw Error('第二級距結束成績需要大於開始成績。');
-            if (thridClass.start >= thridClass.end) throw Error('第三級距結束成績需要大於開始成績。');
+            if (thirdClass.start >= thirdClass.end) throw Error('第三級距結束成績需要大於開始成績。');
 
-            check.classDiff({
+            const invalidStudents = check.classDiff({
               students,
               scoreKey,
               secondClass,
-              thridClass,
+              thirdClass,
             });
+
+            handleInvalidStudents(invalidStudents);
+
             break;
           }
 
