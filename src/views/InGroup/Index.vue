@@ -14,8 +14,16 @@
     </div>
 
     <div class="group">
-      <p class="title">成績是在哪個sheet?</p>
-      <p class="note">目前只支援單個sheet的擺放方式。</p>
+      <p class="title">成績是怎麼放的？</p>
+      <select v-model="setting.wayOfPuttingScore" class="primary">
+        <option value="singleSheet">單個表格</option>
+        <option value="multipleSheets">多個表格</option>
+      </select>
+    </div>
+
+    <div v-if="setting.wayOfPuttingScore === 'singleSheet'" class="group">
+      <p class="title">成績在哪一個表格？</p>
+      <p class="note">選擇您將成績所放置的欄位</p>
       <select v-model="setting.sheet" class="primary">
         <option v-for="(sheet, index) in sheets" :value="sheet" :key="index">
           {{ sheet }}
@@ -23,36 +31,35 @@
       </select>
     </div>
 
+    <div v-if="setting.wayOfPuttingScore === 'multipleSheets'" class="group">
+      <p class="title">幾個表格決定一個學生的成績?</p>
+      <p class="note">注意：成績需要按照順序擺放好。</p>
+      <input
+        v-model="setting.numSheets"
+        type="text"
+        class="text"
+        placeholder="ex: 3"
+      />
+    </div>
+
     <div class="group">
-      <p class="title">成績是怎麼放的？</p>
-      <p class="note">目前只支援單行的擺放方式。</p>
-      <select v-model="setting.wayOfPuttingScore" class="primary">
-        <option value="singleLine">單行</option>
+      <p class="title">成績在哪一行？</p>
+      <p class="note">選擇您將成績所放置的欄位</p>
+      <select v-model="setting.scoreKey" class="primary">
+        <option v-for="(key, index) in keys" :value="key" :key="index">
+          {{ key }}
+        </option>
       </select>
     </div>
 
-    <div v-if="setting.sheet">
-      <div class="group">
-        <p class="title">成績在哪一行？</p>
-        <p class="note">選擇您將成績所放置的欄位</p>
-        <select v-model="setting.scoreKey" class="primary">
-          <option v-for="(key, index) in keys" :value="key" :key="index">
-            {{ key }}
-          </option>
-        </select>
-      </div>
-
-      <div class="group">
-        <p class="title">輸出的欄位名稱</p>
-        <p class="note">
-          例如：選擇學生姓名，審核結束時會輸出不合格的學生姓名。
-        </p>
-        <select v-model="setting.outputKey" class="primary">
-          <option v-for="(key, index) in keys" :value="key" :key="index">
-            {{ key }}
-          </option>
-        </select>
-      </div>
+    <div class="group">
+      <p class="title">輸出的欄位名稱</p>
+      <p class="note">例如：選擇學生姓名，審核結束時會輸出不合格的學生姓名。</p>
+      <select v-model="setting.outputKey" class="primary">
+        <option v-for="(key, index) in keys" :value="key" :key="index">
+          {{ key }}
+        </option>
+      </select>
     </div>
 
     <div class="group">
@@ -179,6 +186,8 @@ export default {
     const setting = reactive({
       sheet: null,
       wayOfPuttingScore: null,
+      numSheets: null,
+      sheets: [],
       scoreKey: null,
       outputKey: null,
       checkingType: null,
@@ -194,12 +203,13 @@ export default {
         },
       },
     });
-    const keys = computed(() => (excel && setting.sheet ? Object.keys(excel[setting.sheet][0]) : []));
+    const keys = computed(() => (setting.sheet ? Object.keys(excel[setting.sheet][0]) : []));
 
     async function upload() {
       try {
         excel = await spiderman.excel.rawFileToObject(rawFile);
         sheets.value = Object.keys(excel);
+        [setting.sheet] = Object.keys(excel);
       } catch (error) {
         warning.value = {
           display: true,
