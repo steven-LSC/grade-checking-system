@@ -4,7 +4,7 @@ function singleSheet({ excel, sheetKey, scoreKey } = {}) {
   if (!scoreKey) throw Error('請選擇成績所在的欄位');
 
   excel[sheetKey].forEach((student) => {
-    student[scoreKey].split('\n').map(Number);
+    student.scores = student[scoreKey].split('\n').map(Number);
   });
 
   return excel[sheetKey];

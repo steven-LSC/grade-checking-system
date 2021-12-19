@@ -18,7 +18,7 @@
     </Upload>
   </div>
 
-  <div v-if="setting.wayOfPuttingScore === 'multipleSheets'" class="group">
+  <div class="group">
     <p class="title">幾個表格決定一個學生的成績?</p>
     <p class="note">注意：成績需要按照順序擺放好。</p>
     <input
@@ -115,9 +115,9 @@ export default {
       textInButton: '結束',
     });
     const setting = reactive({
-      numSheetsPerStudent: 3,
-      scoreKey: '總分',
-      outputKeys: ['姓名'],
+      numSheetsPerStudent: null,
+      scoreKey: null,
+      outputKeys: [],
     });
     const studentInfoKeys = computed(() => (setting.sheetKey ? Object.keys(excel[setting.sheetKey][0]) : []));
 
