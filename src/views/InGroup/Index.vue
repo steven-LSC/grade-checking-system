@@ -146,16 +146,8 @@ import { computed, reactive, ref } from 'vue';
 import spiderman from '@/spiderman';
 import transformScores from './libs/transform-scores';
 import check from './libs/check';
-import ModalComplete from '@/components/ModalComplete.vue';
-import ModalWarning from '@/components/ModalWarning.vue';
-import Upload from '@/components/Upload.vue';
 
 export default {
-  components: {
-    ModalComplete,
-    ModalWarning,
-    Upload,
-  },
   setup() {
     let excel = null;
     const rawFile = ref(null);

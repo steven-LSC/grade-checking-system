@@ -86,18 +86,8 @@ import { ref, reactive, computed } from 'vue';
 import xlsx from 'xlsx';
 import transformScores from './libs/transform-scores';
 import spiderman from '@/spiderman';
-import ModalComplete from '@/components/ModalComplete.vue';
-import ModalWarning from '@/components/ModalWarning.vue';
-import Alert from '@/components/Alert.vue';
-import Upload from '@/components/Upload.vue';
 
 export default {
-  components: {
-    ModalComplete,
-    ModalWarning,
-    Upload,
-    Alert,
-  },
   setup() {
     let excel = null;
     const rawFile = ref(null);
