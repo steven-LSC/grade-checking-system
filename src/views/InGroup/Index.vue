@@ -59,12 +59,20 @@
     <p class="title">輸出的欄位名稱</p>
     <p class="note">例如：選擇學生姓名，審核結束時會輸出不合格的學生姓名。</p>
     <select v-model="setting.outputKeys[0]" class="primary">
-      <option v-for="(key, index) in studentInfoKeys" :value="key" :key="index">
+      <option
+        v-for="(key, index) in ['轉換後學生成績', ...studentInfoKeys]"
+        :value="key"
+        :key="index"
+      >
         {{ key }}
       </option>
     </select>
     <select v-model="setting.outputKeys[1]" class="primary">
-      <option v-for="(key, index) in studentInfoKeys" :value="key" :key="index">
+      <option
+        v-for="(key, index) in ['轉換後學生成績', ...studentInfoKeys]"
+        :value="key"
+        :key="index"
+      >
         {{ key }}
       </option>
     </select>
@@ -203,6 +211,11 @@ export default {
       let content = '以下同學不符合差分標準：\n';
       invalidStudents.forEach((invalidStudent) => {
         outputKeys.forEach((outputKey) => {
+          if (outputKey === '轉換後學生成績') {
+            content += `${invalidStudent.scores.join('、')} `;
+            return;
+          }
+
           if (outputKey) {
             content += `${invalidStudent[outputKey]} `;
           }
