@@ -42,7 +42,7 @@
           focus-within:ring-indigo-500
         "
       >
-        <span>上傳</span>
+        <span>讀取</span>
         <slot></slot>
       </label>
       <p class="text-xs text-gray-500">CSV, XLS, XLSX</p>

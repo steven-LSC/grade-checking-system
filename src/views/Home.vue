@@ -3,7 +3,7 @@
     <div class="group">
       <Alert
         title="資訊安全宣導"
-        content="本系統不會儲存任何資料，所有計算皆是透過您的瀏覽器完成，因此並無學生資訊洩漏疑慮，感謝。"
+        content="本系統僅讀取excel，並透過您的瀏覽器完成計算，沒有儲存任何資料，因此並無學生資訊洩漏疑慮，感謝。"
       />
     </div>
     <div class="group">
